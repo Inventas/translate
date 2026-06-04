@@ -169,6 +169,10 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
 
     def add_language(self, language_code: str) -> None:
         """Add an empty localization entry for every catalog string."""
+        source_language = self.getsourcelanguage() or self._file.get("sourceLanguage")
+        if not isinstance(source_language, str):
+            source_language = "en"
+
         strings = self._file.setdefault("strings", {})
         if not isinstance(strings, dict):
             strings = {}
@@ -183,10 +187,42 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
             if not isinstance(localizations, dict):
                 localizations = {}
                 entry["localizations"] = localizations
-            localizations.setdefault(
-                language_code,
-                {"stringUnit": {"state": XCStringsState.NEW, "value": ""}},
+            if language_code in localizations:
+                continue
+            source_localization = localizations.get(source_language, {})
+            localizations[language_code] = self._empty_localization_from_source(
+                source_localization if isinstance(source_localization, dict) else {}
             )
+
+    @classmethod
+    def _empty_localization_from_source(cls, source_localization: JsonDict) -> JsonDict:
+        source_variants = cls._collect_variants(source_localization)
+        if not source_variants:
+            return {"stringUnit": {"state": XCStringsState.NEW, "value": ""}}
+
+        localization: JsonDict = {}
+        for path, source_variant in sorted(
+            source_variants.items(), key=lambda item: cls._path_sort_key(item[0])
+        ):
+            empty_variant = XCStringsVariant(
+                path,
+                {},
+                plural_tags=(
+                    source_variant.plural_tags if source_variant.is_plural else None
+                ),
+            )
+            if source_variant.is_plural:
+                empty_variant.write_value(
+                    localization,
+                    multistring([""] * len(source_variant.plural_tags or [])),
+                    state=XCStringsState.NEW,
+                    template=source_variant,
+                )
+            else:
+                empty_variant.write_value(
+                    localization, "", state=XCStringsState.NEW, template=source_variant
+                )
+        return localization
 
     @classmethod
     def _load_json(cls, data: str | bytes | TextIO | BinaryIO) -> JsonDict:

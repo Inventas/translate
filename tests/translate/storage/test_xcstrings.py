@@ -135,6 +135,45 @@ def test_add_language_adds_empty_localizations() -> None:
     assert "de" not in serialized["strings"]["brand"]["localizations"]
 
 
+def test_add_language_mirrors_variant_localizations() -> None:
+    store = xcstrings.XCStringsFile(fixture("variants.xcstrings"), language_code="de")
+
+    store.add_language("de")
+
+    serialized = json.loads(bytes(store))
+    german_apples = serialized["strings"]["apples"]["localizations"]["de"]
+    assert "stringUnit" not in german_apples
+    assert german_apples["variations"]["plural"] == {
+        "one": {"stringUnit": {"state": "new", "value": ""}},
+        "other": {"stringUnit": {"state": "new", "value": ""}},
+    }
+
+    german_birds = serialized["strings"]["birdSightingAlert"]["localizations"]["de"]
+    assert german_birds["stringUnit"] == {"state": "new", "value": ""}
+    assert german_birds["substitutions"]["BIRDS"]["formatSpecifier"] == "BIRDS"
+    assert german_birds["substitutions"]["BIRDS"]["variations"]["plural"] == {
+        "zero": {"stringUnit": {"state": "new", "value": ""}},
+        "one": {"stringUnit": {"state": "new", "value": ""}},
+        "other": {"stringUnit": {"state": "new", "value": ""}},
+    }
+
+    german_ordered = serialized["strings"]["ordered"]["localizations"]["de"]
+    assert "stringUnit" not in german_ordered
+    assert german_ordered["variations"]["device"] == {
+        "mac": {"stringUnit": {"state": "new", "value": ""}},
+        "other": {"stringUnit": {"state": "new", "value": ""}},
+    }
+
+    reparsed = xcstrings.XCStringsFile(bytes(store), language_code="de")
+    assert [unit.getid() for unit in reparsed.units] == [
+        "apples",
+        "birdSightingAlert",
+        "birdSightingAlert|substitution.BIRDS",
+        "ordered|device.mac",
+        "ordered|device.other",
+    ]
+
+
 def test_real_world_variations_fixture_exposes_device_and_plural_units() -> None:
     store = xcstrings.XCStringsFile(
         fixture("real_liamnichols_variations.xcstrings"), language_code="en"
