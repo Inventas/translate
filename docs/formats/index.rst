@@ -42,6 +42,7 @@ Other translation formats
    rc
    strings
    stringsdict
+   xcstrings
    flex
    catkeys
    android
@@ -60,6 +61,7 @@ Other translation formats
 * Windows :doc:`rc` files
 * Mac OSX :doc:`strings` files (also used on the iPhone) (from version 1.8)
 * Apple :doc:`stringsdict` plural files (from version 3.14)
+* Apple :doc:`xcstrings` String Catalog files
 * Adobe :doc:`flex` files (from version 1.8)
 * Haiku :doc:`catkeys` (from version 1.8)
 * :doc:`android` (supports storage, not conversion)

@@ -18,6 +18,10 @@ The Translate Toolkit supports .stringsdict files via
    :doc:`strings`
       Mac OSX .strings format used alongside .stringsdict files.
 
+   :doc:`xcstrings`
+      Apple's JSON-based String Catalog format for strings, plurals, device
+      variations, and substitutions.
+
    :ref:`xliff#apple_xliff`
       Apple's XLIFF variant that encodes the same plural information in XLIFF
       format and is supported via ``translate.storage.applestrings_xliff``.

@@ -18,6 +18,10 @@ This format is standardized as PWG 5100.13 and used on NeXTSTEP/OpenSTEP as well
    :doc:`stringsdict`
       Apple's plist-based plural format used alongside .strings files.
 
+   :doc:`xcstrings`
+      Apple's JSON-based String Catalog format that replaces .strings and
+      .stringsdict for modern Xcode projects.
+
    :ref:`xliff#apple_xliff`
       Apple's XLIFF variant that encodes .stringsdict plural information in
       XLIFF format.

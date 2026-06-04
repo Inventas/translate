@@ -56,6 +56,7 @@ _classes_str = {
     "ftl": ("fluent", "FluentFile"),
     "toml": ("toml", "TOMLFile"),
     "wxl": ("wxl", "WxlFile"),
+    "xcstrings": ("xcstrings", "XCStringsFile"),
 }
 ###  XXX:  if you add anything here, you must also add it to translate.storage.
 
@@ -276,6 +277,7 @@ supported = [
     ("Haiku catkeys file", ["catkeys"], ["application/x-catkeys"]),
     ("Fluent file", ["ftl"], []),
     ("WiX Localization File", ["wxl"], ["text/xml"]),
+    ("Apple String Catalog", ["xcstrings"], ["application/x-xcstrings"]),
 ]
 
 

@@ -1,0 +1,37 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "unknown": {
+      "comment": "Preserve extra metadata",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep me",
+            "x-string-unit": {
+              "kept": true
+            }
+          },
+          "x-localization": "source metadata"
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gardez-moi",
+            "x-string-unit": {
+              "kept": true
+            }
+          },
+          "x-localization": "target metadata"
+        }
+      },
+      "x-entry": {
+        "kept": true
+      }
+    }
+  },
+  "version": "1.0",
+  "x-top": {
+    "kept": true
+  }
+}
