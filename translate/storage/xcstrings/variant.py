@@ -42,10 +42,12 @@ class XCStringsVariant:
         container: JsonDict,
         *,
         plural_tags: list[str] | None = None,
+        root_container: JsonDict | None = None,
     ) -> None:
         self.path = path
         self.container = container
         self.plural_tags = plural_tags
+        self._root_container = root_container or container
 
     @property
     def is_plural(self) -> bool:
@@ -124,14 +126,15 @@ class XCStringsVariant:
                 if not isinstance(substitutions, dict):
                     substitutions = {}
                     current["substitutions"] = substitutions
-                if name not in substitutions or not isinstance(substitutions[name], dict):
-                    substitutions[name] = self._substitution_template(
-                        name, template_current
-                    )
-                current = substitutions[name]
-                template_current = self._template_child(
+                substitution_template = self._template_child(
                     template_current, "substitutions", name
                 )
+                if name not in substitutions or not isinstance(substitutions[name], dict):
+                    substitutions[name] = self._substitution_template(
+                        name, substitution_template
+                    )
+                current = substitutions[name]
+                template_current = substitution_template
             elif kind == "variation":
                 variation_type, case = segment[1], segment[2]
                 variations = current.setdefault("variations", {})
@@ -156,7 +159,7 @@ class XCStringsVariant:
 
     @property
     def root_container(self) -> JsonDict:
-        return self.container
+        return self._root_container
 
     @staticmethod
     def _template_child(

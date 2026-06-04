@@ -177,6 +177,8 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
         for entry in strings.values():
             if not isinstance(entry, dict):
                 continue
+            if entry.get("shouldTranslate") is False:
+                continue
             localizations = entry.setdefault("localizations", {})
             if not isinstance(localizations, dict):
                 localizations = {}
@@ -258,20 +260,27 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
                     source_variant=source_variant,
                     target_variant=target_variant,
                     plural_tags=plural_tags if is_plural else None,
-                    state=(target_variant or source_variant).state
-                    if (target_variant or source_variant)
+                    state=target_variant.state
+                    if target_variant is not None
                     else XCStringsState.NEW,
                 )
                 self.addunit(unit)
 
     @classmethod
     def _collect_variants(
-        cls, container: JsonDict, path: VariantPath = ()
+        cls,
+        container: JsonDict,
+        path: VariantPath = (),
+        root_container: JsonDict | None = None,
     ) -> dict[VariantPath, XCStringsVariant]:
+        if root_container is None:
+            root_container = container
         variants: dict[VariantPath, XCStringsVariant] = {}
 
         if isinstance(container.get("stringUnit"), dict):
-            variants[path] = XCStringsVariant(path, container)
+            variants[path] = XCStringsVariant(
+                path, container, root_container=root_container
+            )
 
         substitutions = container.get("substitutions", {})
         if isinstance(substitutions, dict):
@@ -279,7 +288,9 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
                 if isinstance(substitution, dict):
                     variants.update(
                         cls._collect_variants(
-                            substitution, (*path, ("substitution", str(name)))
+                            substitution,
+                            (*path, ("substitution", str(name))),
+                            root_container,
                         )
                     )
 
@@ -295,7 +306,10 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
                 plural_path = (*path, ("plural",))
                 plural_tags = cls._sorted_plural_tags(cases.keys())
                 variants[plural_path] = XCStringsVariant(
-                    plural_path, cases, plural_tags=plural_tags
+                    plural_path,
+                    cases,
+                    plural_tags=plural_tags,
+                    root_container=root_container,
                 )
                 continue
             for case, case_container in cases.items():
@@ -304,6 +318,7 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
                         cls._collect_variants(
                             case_container,
                             (*path, ("variation", variation_type, str(case))),
+                            root_container,
                         )
                     )
         return variants
