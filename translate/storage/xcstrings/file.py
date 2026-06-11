@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, BinaryIO, TextIO, cast
 
 from translate.lang import data as lang_data
@@ -111,6 +112,12 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
         """Parse a String Catalog JSON file."""
         if hasattr(data, "name"):
             self.filename = cast("Any", data).name
+        elif isinstance(data, (str, os.PathLike)):
+            filename = os.fspath(data)
+            if isinstance(filename, bytes):
+                filename = filename.decode("utf-8-sig")
+            if not self._looks_like_inline_json(filename):
+                self.filename = filename
         self.units = []
         self.locationindex = {}
         self.sourceindex = {}
@@ -229,8 +236,15 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
         text: str | bytes
         if hasattr(data, "read"):
             text = cast("BinaryIO", data).read()
+        elif isinstance(data, os.PathLike):
+            with open(os.fspath(data), "rb") as handle:
+                text = handle.read()
         else:
             text = data
+
+        if isinstance(text, str) and not cls._looks_like_inline_json(text):
+            with open(text, "rb") as handle:
+                text = handle.read()
 
         if isinstance(text, bytes):
             try:
@@ -246,6 +260,10 @@ class XCStringsFile(base.TranslationStore[XCStringsUnit]):
         if not isinstance(parsed, dict):
             raise base.ParseError(ValueError(".xcstrings root must be a JSON object."))
         return parsed
+
+    @staticmethod
+    def _looks_like_inline_json(text: str) -> bool:
+        return text.lstrip("\ufeff \t\r\n").startswith("{")
 
     def _extract_units(self) -> None:
         source_language = self.getsourcelanguage() or "en"

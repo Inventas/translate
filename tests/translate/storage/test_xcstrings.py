@@ -1,10 +1,12 @@
 import json
+from io import BytesIO, StringIO
 from pathlib import Path
+
+import pytest
 
 from translate.misc.multistring import multistring
 from translate.storage import factory, xcstrings
 from translate.storage.workflow import StateEnum as states
-
 
 FIXTURE_DIR = Path(__file__).with_name("xcstrings")
 
@@ -17,8 +19,20 @@ def test_factory_registers_xcstrings_extension() -> None:
     assert factory.getclass("Localizable.xcstrings") is xcstrings.XCStringsFile
 
 
-def test_list_languages_returns_source_and_localization_languages() -> None:
-    languages = xcstrings.XCStringsFile.list_languages(fixture("variants.xcstrings"))
+@pytest.mark.parametrize(
+    "catalog_input",
+    [
+        fixture("variants.xcstrings"),
+        fixture("variants.xcstrings").decode("utf-8"),
+        BytesIO(fixture("variants.xcstrings")),
+        StringIO(fixture("variants.xcstrings").decode("utf-8")),
+        str(FIXTURE_DIR / "variants.xcstrings"),
+    ],
+)
+def test_list_languages_returns_source_and_localization_languages(
+    catalog_input,
+) -> None:
+    languages = xcstrings.XCStringsFile.list_languages(catalog_input)
 
     assert languages == ["en", "fr"]
 
@@ -35,6 +49,16 @@ def test_parse_simple_catalog_with_language_code() -> None:
     assert hello.target == "Bonjour"
     assert hello.getnotes() == "Greeting shown on the home screen"
     assert hello.isfuzzy()
+
+
+def test_parse_simple_catalog_from_filename_string() -> None:
+    filename = str(FIXTURE_DIR / "simple.xcstrings")
+    store = xcstrings.XCStringsFile(filename, language_code="fr")
+
+    assert store.filename == filename
+    assert store.getsourcelanguage() == "en"
+    assert store.gettargetlanguage() == "fr"
+    assert [unit.getid() for unit in store.units] == ["brand", "hello", "missing"]
 
 
 def test_missing_target_value_is_exposed_without_creating_it_on_roundtrip() -> None:
@@ -55,9 +79,10 @@ def test_setting_missing_target_creates_target_localization() -> None:
     store = xcstrings.XCStringsFile(fixture("simple.xcstrings"), language_code="fr")
     store.findid("missing").target = "Absent"
 
-    assert bytes(store).decode() == fixture(
-        "simple_missing_translated.expected.xcstrings"
-    ).decode()
+    assert (
+        bytes(store).decode()
+        == fixture("simple_missing_translated.expected.xcstrings").decode()
+    )
 
 
 def test_should_translate_false_is_non_translatable_and_not_written() -> None:
@@ -115,9 +140,7 @@ def test_unknown_fields_survive_roundtrip_serialization() -> None:
     entry = serialized["strings"]["unknown"]
     assert entry["x-entry"] == {"kept": True}
     assert entry["localizations"]["fr"]["x-localization"] == "target metadata"
-    assert entry["localizations"]["fr"]["stringUnit"]["x-string-unit"] == {
-        "kept": True
-    }
+    assert entry["localizations"]["fr"]["stringUnit"]["x-string-unit"] == {"kept": True}
 
 
 def test_add_language_adds_empty_localizations() -> None:
@@ -294,8 +317,7 @@ def test_real_world_netnewswire_fixture_supports_version_1_1_device_cases() -> N
     assert iphone.source == "On My iPhone"
     assert vision.source == "On My Apple Vision"
     assert (
-        iphone.getnotes()
-        == "Device specific default account name, e.g: On my iPhone"
+        iphone.getnotes() == "Device specific default account name, e.g: On my iPhone"
     )
     assert json.loads(bytes(store))["version"] == "1.1"
 
